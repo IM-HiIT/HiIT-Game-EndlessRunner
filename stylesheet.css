@@ -1,0 +1,12 @@
+
+body {
+    background: gray;
+}
+
+canvas {
+    background: white;;
+}
+
+.hidden {
+    display: none;
+}
