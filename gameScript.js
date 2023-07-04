@@ -8,14 +8,14 @@ const GAME_CONTAINER = document.getElementById('main'),
     CAMERA_X_OFFSET = 150,
     CAMERA_SHAKERADIUS = 16,
 
-    //
+    // World Globals
     BACKGROUND_WIDTH = 1000,//480,
     GROUND_Y = 540,
     HORIZON_Y = 20,
     GRAVITY_PULL = 1,
     JUMP_KEY = 32,
 
-    //
+    // Player Globals
     PLAYER_WIDTH = 96,
     PLAYER_HEIGHT = 96,
     PLAYER_ANIM_FRAMES = 8,
@@ -24,7 +24,7 @@ const GAME_CONTAINER = document.getElementById('main'),
     PLAYER_JUMP_SPEED = 20,
     PLAYER_MAX_HEALTH = 100,
 
-    //
+    // Enemy Globals
     ENEMY_WIDTH = 46,
     ENEMY_HEIGHT = 32,
     ENEMY_ANIM_FRAMES = 4,
@@ -83,6 +83,7 @@ let playerX = (CANVAS_WIDTH / 2),
         spriteHeight: PLAYER_HEIGHT,
         image: playerImage
     },
+
     playerCollisionBox = { /* SHOULD BE TWEAKED */
         xOffset: 60,
         yOffset: 20,
@@ -99,11 +100,13 @@ let enemySpriteSheet = {
     spriteHeight: ENEMY_HEIGHT,
     image: enemyImage
 },
+
     enemyData = [{
         x: 400,
         y: (GROUND_Y - ENEMY_HEIGHT),
         frameNum: 0
     }],
+
     enemyCollisionBox = { /* SHOULD BE TWEAKED */
         xOffset: 50,
         yOffset: 20,
@@ -213,15 +216,10 @@ function GameUpdate() {
         let collisionDetected = false;
         for (let i = 0; i < enemyData.length; i++) {
             // Collision
-            if (collidingPlayerEnemy(
-                playerX + playerCollisionBox.xOffset,
-                playerY + playerCollisionBox.yOffset,
-                playerCollisionBox.width,
-                playerCollisionBox.height,
-                enemyData[i].x + enemyCollisionBox.xOffset,
-                enemyData[i].y + enemyCollisionBox.yOffset,
-                enemyCollisionBox.width,
-                enemyCollisionBox.height)) {
+            if (collidingPlayerEnemy(playerX + playerCollisionBox.xOffset, playerY + playerCollisionBox.yOffset,
+                    playerCollisionBox.width, playerCollisionBox.height,
+                    enemyData[i].x + enemyCollisionBox.xOffset, enemyData[i].y + enemyCollisionBox.yOffset,
+                    enemyCollisionBox.width, enemyCollisionBox.height)) {
                 collisionDetected = true;
             }
             // Movement
@@ -263,6 +261,7 @@ function GameUpdate() {
                 collisionFull = (playerMinX <= enemyMinX) && (playerMaxX >= enemyMaxX);
             return collisionMin || collisionMax || collisionFull;
         }
+
         //
         function collidingPlayerEnemy(playerX, playerY, playerWidth, playerHeight, enemyX, enemyY, enemyWidth, enemyHeight) {
             let collideXAxis = collisionDetection(playerX, playerX + playerWidth, enemyX, enemyX + enemyWidth),
@@ -273,6 +272,7 @@ function GameUpdate() {
         return collisionDetected;
     }
 
+    
     // Player Run
     playerX += (playerXSpeed * PLAYER_RUN_SPEED);
 
@@ -291,14 +291,20 @@ function GameUpdate() {
         playerY = GROUND_Y - PLAYER_HEIGHT;
         playerYSpeed = 0;
         isJumping = false;
+
+       
     }
 
     // Animations Update
     if ((gameFrameCount % PLAYER_ANIM_SPEED) === 0) {
         playerFrameNum += 1;
-        if (playerFrameNum >= PLAYER_ANIM_FRAMES) {
-            playerFrameNum = 0;
+        // RUNNING ANIM FRAMES = 2/4
+        if (playerFrameNum >= PLAYER_ANIM_FRAMES || playerFrameNum >= 4) {
+            playerFrameNum = 2;
         }
+        if (isJumping) {
+            playerFrameNum = 1;
+        } // else if (LANDING ANIM) {// playerFrameNum = 6;}
     }
 
     // Update Camera Pos
@@ -323,7 +329,7 @@ function CanvasDraw() {
     gameContext.fillRect(0, 0, CANVAS_WIDTH, (GROUND_Y - (HORIZON_Y * 2)));
 
     // Background Draw
-    let backgroundX = -(cameraX % BACKGROUND_WIDTH);
+    let backgroundX = -(camShakeX % BACKGROUND_WIDTH);
     gameContext.drawImage(backgroundImage, backgroundX, HORIZON_Y);
     gameContext.drawImage(backgroundImage, (backgroundX + BACKGROUND_WIDTH), HORIZON_Y);
 
