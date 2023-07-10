@@ -15,18 +15,46 @@
         <h1>Endless Runner</h1>
     </header>
     <main id="main"></main>
+    <summary>
+        <h2>Game Controls</h2>
+        <p>Press "W" to Jump,</p>
+        <p>Press "S" to Slide.</p>
+        <p>Press "Q" or Click on the Game to Pause/Unpause</p>
+        <h2>Game Summary</h2>
+        <p>TO BE ADDED</p>
+    </summary>
     <aside>
-        <ul class="hidden">Game Rules
+        <h2>Features version 1.0</h2>
+        <ul>
             <li>We see a Player in an exciting game world</li>
             <li>The Player can jump in the air.</li>
             <li>The Player falls to the ground.</li>
             <li>The Player automatically runs to the right and is followed by the camera.</li>
             <li>The Player is animated.</li>
             <li>There are things to see in the background. They make the game world lively.</li>
-            <li>Hostile animated robots run from right to left.</li>
-            <li> When the robots walk on the left side of the screen, they disappear. New robots appear on the right.</li>
-            <li>If a Player collides with a robot, he loses health.</li>
+            <li>Hostile animated enemies run from right to left.</li>
+            <li> When the enemies walk on the left side of the screen, they disappear. New enemies appear on the right.
+            </li>
+            <li>If a Player collides with an enemy, he loses health.</li>
             <li>If the Player loses all his health, the game ends.</li>
+        </ul>
+        <h2>Features In Progress</h2>
+        <ul>
+            <li>Add Player Slide function when the user presses Keyboard Down Arrow, with a new Animation</li>
+            <li>Add New Flying Enemies, that the player has to avoid by sliding.</li>
+        </ul>
+        <h2>Features To Do</h2>
+        <ul>
+            <li>Add Collectable Tokens, Show a Token Counter (Tokens spawn like the Decorations, they also need Collsion
+                Detection to remove the token from the gameworld)</li>
+            <li>Add a Token Counter and Total ran distance on the Game Over Screen.</li>
+            <li>Add Player Slide function when the user presses Keyboard Down Arrow, with a new Animation</li>
+            <li>Add New Flying Enemies, that the player has to avoid by sliding.</li>
+            <li>Add difficulty bij either making the enemies run faster or the player jump lower.</li>
+            <li>Change/Add Enemy Speed to the Enemy-Object, instead of a constant value in the UpdateEnemies() function.
+                This will allow for a varied enemy behaviour.</li>
+            <li>Change/Add the Collisions to the Enemy-Object. This will allow for varied Collision Behaviour, i.e. On
+                Collision Throw the Player in the Air or Have enemies GIVE the player health.</li>
         </ul>
     </aside>
     <footer>
