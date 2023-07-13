@@ -1,5 +1,5 @@
 "use strict"
-//
+// Debug Mode
 let debugMode = true;
 
 /* CONSTANTS
@@ -9,13 +9,11 @@ const GAME_CONTAINER = document.getElementById('main'), // Element to draw Canva
     MODE_PLAY = 0,          // Play Game Mode
     MODE_GAMEOVER = 1,      // Game Over Mode
     MODE_PAUSE = 2,         // Pause Game Mode
-
     // Camera and Canvas Globals
     CANVAS_WIDTH = 800,         // Width of Game Canves
     CANVAS_HEIGHT = 600,        // Height of Game Canvas
     CAMERA_X_OFFSET = 150,      // Camera Offset on X to keep Player in Center Screen
     CAMERA_SHAKERADIUS = 16,    // Radius of the Camera Shake on Collision
-
     // World Globals
     BACKGROUND_WIDTH = 1000,    // Width of the Background Image
     GROUND_Y = 540,             // Ground Y position for Jumping
@@ -24,7 +22,6 @@ const GAME_CONTAINER = document.getElementById('main'), // Element to draw Canva
     JUMP_KEY = 87,              // Jump with "W"-key
     SLIDE_KEY = 83,             // Slide with "S"-key
     PAUSE_KEY = 81,             // Pause/Unpause with "Q"-key
-
     // Player Globals
     PLAYER_WIDTH = 96,          // Player Sprite Width
     PLAYER_HEIGHT = 96,         // Player Spirte Height
@@ -33,11 +30,8 @@ const GAME_CONTAINER = document.getElementById('main'), // Element to draw Canva
     PLAYER_RUN_SPEED = 5,       // Run Speed of Player
     PLAYER_JUMP_SPEED = 20,     // Jump Force of Player
     PLAYER_MAX_HEALTH = 10,     // Max Health of Player
-
-
     // Enemy Globals
-    //Walking: 50x45, Flying: 64x43, Swimming: 64x32
-    ENEMY_WIDTH = 50,           // Width of Enemy Sprite
+    ENEMY_WIDTH = 64,           // Width of Enemy Sprite
     ENEMY_HEIGHT = 45,          // Height of Enemy Sprite
     ENEMY_ANIM_FRAMES = 4,      // Number of Animation Frames in SpriteSheet
     ENEMY_ANIM_SPEED = 6,       // Speed of Animation Cycle
@@ -47,9 +41,7 @@ const GAME_CONTAINER = document.getElementById('main'), // Element to draw Canva
     ENEMY_MAX_ACTIVE = 3;       // Maximal Number of Enemies to Spawn Active
 
 /* SETTINGS
-* In this section we put everything we need before our game can be started, such as the canvas width and image loading settings. 
-We also put all the variable declarations used in the rest of the program here. 
-Finally, we also place the main loop of our program here.
+* In this section we put everything we need before our game can be started, such as the canvas width and image loading settings. We also put all the variable declarations used in the rest of the program here. Finally, we also place the main loop of our program here.
 */
 let gameCanvas = document.createElement('canvas'),  // Create the Game Canvas
     gameContext = gameCanvas.getContext('2d');      // 2D Game Canvas
@@ -58,19 +50,16 @@ gameCanvas.height = CANVAS_HEIGHT;                  // Set Height of Game Canvas
 GAME_CONTAINER.appendChild(gameCanvas);             // Add Game Canvas to Page
 
 let gameMode = MODE_PLAY;           // Current Game Mode (Play, GameOver, Pause)
-
 // Camera and Frames
 let cameraX = 0,                    // Camera X Position
     cameraY = 0,                    // Camera Y Position
     shakeCamera = false,            // Shake Camera on Hit
     gameFrameCount = 0;             // Number of Game Frames
-
 // Background Image
 let backgroundImage1 = new Image();                 // New Background Sprite
 backgroundImage1.src = "imgs/lvl_hills1.png";       // Set Source of Background Sprite
 let backgroundImage2 = new Image();                 // New Background Sprite
 backgroundImage2.src = "imgs/lvl_hills2.png";       // Set Source of Background Sprite
-
 // Level Decor Images
 let shrubberyImage1 = new Image();                  // New Level Decor Sprite
 shrubberyImage1.src = "imgs/lvl_shrub1.png";        // Set Source of Decor Sprite
@@ -79,18 +68,18 @@ shrubberyImage2.src = "imgs/lvl_shrub2.png";        // Set Source of Decor Sprit
 let fenceImage = new Image();                       // New Level Decor Sprite
 fenceImage.src = "imgs/lvl_fence.png";              // Set Source of Decor Sprite
 let levelDecorData = generateDecor();               // Get a random Array of Decor for GameWorld
-
 // PLAYER
 let playerImage = new Image();                          // New Player Sprite
 playerImage.src = "imgs/platformerPack_character.png";  // Set SpriteSheet Source
-
 let playerX = (CANVAS_WIDTH / 2),           // Position of Player on X Axis (Center Screen)
     playerY = (GROUND_Y - PLAYER_HEIGHT),   // Position of Player on Y Axis (On Ground Floor)
-    playerXDirection = 1,                   // Direction of Player Movement on X Axis
+    playerXDirection = 1.01,                   // Direction of Player Movement on X Axis
     playerYSpeed = 0,                       // Fall and Jump Speed of Player on Y Axis
     playerHealth = PLAYER_MAX_HEALTH,       // Set Current Player Health to Max
     isJumpPress = false,                    // Check if Jumping Button is Pressed
     isJumping = false,                      // Check if Currently already Jumping (Prevents Double Jump)
+    isSlidePress = false,
+    isSliding = false,
     playerFrameNum = 0,                     // Current Number of Animation Frame
     playerSpriteSheet = {                   // Players SpriteSheet Data
         framesPerRow: 4,                    // Number of Animation Frames per SpriteSheet Row
@@ -99,15 +88,18 @@ let playerX = (CANVAS_WIDTH / 2),           // Position of Player on X Axis (Cen
         image: playerImage                  // Set Sprite Image
     },
     playerCollisionBox = {                  // Players Collision Box Data
-        xOffset: 20, //60,                  // X Axis Offset of Collision Box
-        yOffset: 40, //20,                  // Y Axis Offset of Collision Box
+        xOffset: 22, //60,                  // X Axis Offset of Collision Box
+        yOffset: 32, //20,                  // Y Axis Offset of Collision Box
         width: 50,                          // Width of Collision Box
-        height: 50 //200                    // Height of Collision Box
+        height: 55 //200                    // Height of Collision Box
     };
-
 // Enemy
 let enemyImage = new Image();                           // New Enemey Sprite
-enemyImage.src = "imgs/spritesheet_Enemy_Walking.png";  // Set SpriteSheet Source
+enemyImage.src = "imgs/spritesheet_Enemy_Walking.png",  // Set SpriteSheet Source
+enemyImage.src = "imgs/spritesheet_Enemy_Flying.png";  // Set SpriteSheet Source
+//
+let flyingOffset = -50;
+//
 let enemySpriteSheet = {                    // Enemy SpriteSheet Data
     framesPerRow: 4,                        // Number of Animation Frames per SpriteSheet Row
     spriteWidth: ENEMY_WIDTH,               // Set Sprite Width 
@@ -116,12 +108,12 @@ let enemySpriteSheet = {                    // Enemy SpriteSheet Data
 },
     enemyData = [{                          // Singular Enemy Data
         x: 2000,                            // Spawn Position X at start
-        y: (GROUND_Y - ENEMY_HEIGHT),       // Set enemy on Ground
+        y: (GROUND_Y - ENEMY_HEIGHT + flyingOffset),       // Set enemy on Ground
         frameNum: 0                         // Current Number of Animation Frame 
     }],
     enemyCollisionBox = {                   // Enemy Collision Box Data
-        xOffset: 10,//55,                   // X Axis Offset of Collision Box
-        yOffset: 10, //20,                  // Y Axis Offset of Collision Box
+        xOffset: 16,//55,                   // X Axis Offset of Collision Box
+        yOffset: 6, //20,                  // Y Axis Offset of Collision Box
         width: 30,//50,                     // Width of Collision Box
         height: 30//100                     // Height of Collision Box
     }
@@ -203,46 +195,55 @@ function generateDecor() {
     return generatedDecorData;                      // Return the Decor
 }
 
-/* GAME LOOP
-* This section is where keystroke processing, updating, and drawing takes place. So you would think this section is huge.
-Still, this part of your program is small, because we break all these things into functions that are placed in other sections. 
-Long functions are confusing, so we break them down into smaller parts that are easier to understand. It makes no difference to your browser.
+/* 
+* 
 */
+/** GAME LOOP
+ * This section is where keystroke processing, updating, and drawing takes place. So you would think this section is huge. Still, this part of your program is small, because we break all these things into functions that are placed in other sections. Long functions are confusing, so we break them down into smaller parts that are easier to understand. It makes no difference to your browser.
+ */
 function gameLoop() {
     GameUpdate();                               // Update the Game Logics
     CanvasDraw();                               // Draw the Game
     window.requestAnimationFrame(gameLoop);     // Request GameLoop Again
 }
-
-/* PLAYER OPERATIONS
-* This section will contain callbacks. As you have read before, these are functions that are called when the player presses a button.
-*/
+/** PLAYER OPERATIONS
+ * This section will contain callbacks. As you have read before, these are functions that are called when the player presses a button.
+ * @param {*} event 
+ */
 function onKeyDown(event) {         // When a KB-Button is pressed
     let keyCode = event.keyCode;    // Get what KB-Button is Pressed
     if (keyCode === JUMP_KEY) {     // If JumpButton was pressed
         isJumpPress = true;         // JumpButton is pressed
     }
+    if (keyCode === SLIDE_KEY) {     // If SlideButton was pressed
+        isSlidePress = true;         // SlideButton is pressed
+    }
+
     if (keyCode === PAUSE_KEY) {    // If the Pause Button was Pressed
         modeSwitch();               // Switch Game mode from Unpause/Paused
     }
 }
-
+/**
+ * 
+ * @param {*} event 
+ */
 function onKeyUP(event) {           // When a KB-Button is released
     let keyCode = event.keyCode;    // Get what KB-Button was released
     if (keyCode === JUMP_KEY) {     // If JumpButton was released
         isJumpPress = false;        // JumpButton is nolonger pressed
     }
+    if (keyCode === SLIDE_KEY) {     // If SlideButton was released
+        isSlidePress = false;        // SlideButton is nolonger pressed
+    }
 }
-
-
-/* GAME UPDATE
-* In this section we put all the code that looks at what happens and what keys the player presses. This section then adjusts the position of the character and the score.
-*/
+/** GAME UPDATE
+ * In this section we put all the code that looks at what happens and what keys the player presses. This section then adjusts the position of the character and the score.
+ * @returns 
+ */
 function GameUpdate() {
     if (gameMode != MODE_PLAY) {    // If the Game is not Playing
         return;                     // Return out of the Loop
     }
-    gameFrameCount += 1;            // Update the FrameCounter each Loop Cycle
     updateLevelDecor();             // World Decor Update
     updateEnemyMove();              // Update Enemies
     updateEnemyCollision();         // Enemy Collision Update
@@ -251,9 +252,11 @@ function GameUpdate() {
     updatePlayerMove();             // Player Movement Update
     updatePlayerAnim();             // Player Animation Update
     updateCamera();                 // Update Camera
+    gameFrameCount += 1;            // Update the FrameCounter each Loop Cycle
 }
-
-// Enemy Update
+/** Enemy Movement Update
+ * 
+ */
 function updateEnemyMove() {
     for (let i = 0; i < enemyData.length; i++) {
         // Movement
@@ -282,15 +285,23 @@ function updateEnemyMove() {
             lastEnemyX = enemyData[enemyData.length - 1].x;
         }
         let newEnemyX = lastEnemyX + ENEMY_MIN_DIST + Math.random() * (ENEMY_MAX_DIST - ENEMY_MIN_DIST);
+
+        /* Switch Random Between FLYING and Walking
+        Switch Image Source
+        Give Walking y: GROUND_Y - ENEMY_HEIGHT, 
+        Give Flying y: GROUND_Y - ENEMY_HEIGHT + FlyingOFFSET,  */
+
         enemyData.push({
             x: newEnemyX,
-            y: GROUND_Y - ENEMY_HEIGHT,
+            y: GROUND_Y - ENEMY_HEIGHT + flyingOffset, //!! Update for FLYING
             frameNum: 0
         });
     }
 }
-
-//
+/**
+ * 
+ * @returns 
+ */
 function updateEnemyCollision() {
     let collisionDetected = false;
     for (let i = 0; i < enemyData.length; i++) {
@@ -302,23 +313,43 @@ function updateEnemyCollision() {
             collisionDetected = true;
         }
     }
-    //
     return collisionDetected;
 }
-// Collision Detection
+
+/** Collision Detection
+ * 
+ * @param {*} playerMinX 
+ * @param {*} playerMaxX 
+ * @param {*} enemyMinX 
+ * @param {*} enemyMaxX 
+ * @returns 
+ */
 function collisionDetection(playerMinX, playerMaxX, enemyMinX, enemyMaxX) {
     let collisionMin = (playerMaxX >= enemyMinX) && (playerMaxX <= enemyMaxX),
         collisionMax = (playerMinX >= enemyMinX) && (playerMinX <= enemyMaxX),
         collisionFull = (playerMinX <= enemyMinX) && (playerMaxX >= enemyMaxX);
     return collisionMin || collisionMax || collisionFull;
 }
-//
+/** colliding Player with Enemy
+ * 
+ * @param {*} playerX 
+ * @param {*} playerY 
+ * @param {*} playerWidth 
+ * @param {*} playerHeight 
+ * @param {*} enemyX 
+ * @param {*} enemyY 
+ * @param {*} enemyWidth 
+ * @param {*} enemyHeight 
+ * @returns 
+ */
 function collidingPlayerEnemy(playerX, playerY, playerWidth, playerHeight, enemyX, enemyY, enemyWidth, enemyHeight) {
     let collideXAxis = collisionDetection(playerX, playerX + playerWidth, enemyX, enemyX + enemyWidth),
         collideYAxis = collisionDetection(playerY, playerY + playerHeight, enemyY, enemyY + enemyHeight);
     return collideXAxis && collideYAxis;
 }
-// Collision Update
+/** Collision Update
+ * 
+ */
 function updateCollision() {
     shakeCamera = false;
     let collisionOccured = updateEnemyCollision();
@@ -329,19 +360,20 @@ function updateCollision() {
         }
     }
 }
-// 
+/** Level Decor Update
+ * 
+ */
 function updateLevelDecor() {
-    // Level Decor Update
     for (let i = 0; i < levelDecorData.length; i++) {
         if ((levelDecorData[i].x - cameraX) < -CANVAS_WIDTH) {
             levelDecorData[i].x += (2 * CANVAS_WIDTH) + 150;
         }
-
     }
 }
-//
+/** updatePlayerMove
+ * 
+ */
 function updatePlayerMove() {
-
     // Player Run
     playerX += (playerXDirection * PLAYER_RUN_SPEED);
 
@@ -349,6 +381,34 @@ function updatePlayerMove() {
     if (isJumpPress && !isJumping) {
         playerYSpeed = -PLAYER_JUMP_SPEED;
         isJumping = true;
+    }
+
+    // Player Slide
+    if (isSliding) {
+        playerCollisionBox.height = 30;
+        playerCollisionBox.yOffset = 60;
+        if (playerXDirection >= 0) {
+            playerXDirection -= 0.01;
+        }
+        if (playerXDirection <= 0) {
+            playerXDirection = 0;
+        }
+    }
+    if (isSlidePress && !isSliding) {
+        isSliding = true;
+    }
+    if (!isSlidePress && isSliding) {
+        playerCollisionBox.height = 55;
+        playerCollisionBox.yOffset = 32;
+        isSliding = false;
+    }
+    if (!isSliding && !isSlidePress) {
+        if (playerXDirection >= 1) {
+            playerXDirection = 1;
+        }
+        if (playerXDirection < 1) {
+            playerXDirection += 0.03;
+        }
     }
 
     // Update Player Y Pos
@@ -361,11 +421,11 @@ function updatePlayerMove() {
         playerYSpeed = 0;
         isJumping = false;
     }
-
 }
-//
+/** Player Animations Update
+ * 
+ */
 function updatePlayerAnim() {
-    // Animations Update
     if ((gameFrameCount % PLAYER_ANIM_SPEED) === 0) {
         playerFrameNum += 1;
         // RUNNING ANIM FRAMES = 2/4
@@ -374,20 +434,25 @@ function updatePlayerAnim() {
         }
         if (isJumping) {
             playerFrameNum = 1;
-        } // else if (LANDING ANIM) {// playerFrameNum = 6;}
+        }
+        if (isSliding) {
+            playerFrameNum = 6;
+        }
     }
 }
-//
+/**
+ * 
+ */
 function updatePlayerHealth() {
-    // Game Over State
-    if (playerHealth <= 0) {
+    if (playerHealth <= 0) { // Game Over State
         gameMode = MODE_GAMEOVER;
         shakeCamera = false;
     }
 }
-//
+/**
+ * 
+ */
 function updateCamera() {
-    // Update Camera Pos
     cameraX = playerX - CAMERA_X_OFFSET;
     cameraY = 0;
 }
@@ -399,7 +464,7 @@ function CanvasDraw() {
     // 
     let camShakeX = cameraX,
         camShakeY = cameraY;
-    if (shakeCamera) {
+    if (shakeCamera && gameMode != MODE_PAUSE) {
         //
         camShakeX += (Math.random() - 0.5) * CAMERA_SHAKERADIUS;
         camShakeY += (Math.random() - 0.5) * CAMERA_SHAKERADIUS;
@@ -429,7 +494,7 @@ function CanvasDraw() {
         playerFrameNum,
         playerSpriteSheet
     );
-
+    // Draw GUI
     drawGUI();
 
     if (debugMode) {
@@ -438,8 +503,11 @@ function CanvasDraw() {
         gameContext.strokeRect(playerX + playerCollisionBox.xOffset - camShakeX, playerY + playerCollisionBox.yOffset - camShakeY, playerCollisionBox.width, playerCollisionBox.height,);
     }
 }
-
-// Draw Game World
+/** Draw Game World
+ * 
+ * @param {*} camShakeX 
+ * @param {*} camShakeY 
+ */
 function drawGameWorld(camShakeX, camShakeY) {
     //Sky Draw
     gameContext.fillStyle = 'LightSkyBlue';
@@ -460,7 +528,9 @@ function drawGameWorld(camShakeX, camShakeY) {
     }
 
 }
-
+/** Draw Game User Interface
+ * 
+ */
 function drawGUI() {
     // Player Points System
     let playerDistance = playerX / 1000; // Distance of Pixel divided bij 1000 is "1 meter"
@@ -478,7 +548,6 @@ function drawGUI() {
     if (gameMode == MODE_PAUSE) {
         gameContext.fillStyle = 'black';
         gameContext.font = '96px sans-serif';
-        //gameContext.fillText('PAUSED', 120, 200);
         gameContext.fillText('PAUSED', 170, CANVAS_HEIGHT / 2);
     }
 
@@ -487,13 +556,17 @@ function drawGUI() {
         gameContext.fillStyle = 'black';
         gameContext.font = '96px sans-serif';
         gameContext.fillText('GAME OVER', 110, CANVAS_HEIGHT / 2 - 20);
-
         gameContext.font = '48px sans-serif';
         gameContext.fillText('PRESS Q or CLICK TO RESTART', 25, CANVAS_HEIGHT / 2 + 20);
     }
 }
-
-// Animate Sprites
+/** Animate Sprites
+ * Function to draw and Animate a Sprite
+ * @param {*} screenX - X position of Screen
+ * @param {*} screenY - Y Position of Screen
+ * @param {*} frameNum - Current Frame Number
+ * @param {*} spriteSheet - Animated SpriteSheet
+ */
 function drawAnimatedSprite(screenX, screenY, frameNum, spriteSheet) {
     let spriteSheetRow = Math.floor(frameNum / spriteSheet.framesPerRow),
         spriteSheetColomn = frameNum % spriteSheet.framesPerRow,
