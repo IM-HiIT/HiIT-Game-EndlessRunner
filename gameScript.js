@@ -106,6 +106,7 @@ enemyImage.src = enemyWalkingSprite;  // Set SpriteSheet Source
 //
 let flyHeight = 60,
     enemySpawnActive = ENEMY_MIN_ACTIVE,
+    enemySpawnMaxDist = ENEMY_MAX_DIST,
     enemySpriteSheet = {                    // Enemy SpriteSheet Data
         framesPerRow: 4,                        // Number of Animation Frames per SpriteSheet Row
         spriteWidth: ENEMY_WIDTH,               // Set Sprite Width 
@@ -251,12 +252,7 @@ function GameUpdate() {
     updatePlayerMove();             // Player Movement Update
     updatePlayerAnim();             // Player Animation Update
     updateCamera();                 // Update Camera
-    let playerDistance = playerX / 1000;
-    if (playerDistance.toFixed(0) > 2) {
-        enemySpawnActive = 10;
-        console.log(enemySpawnActive);
-    }
-
+    updateDifficulty();
     gameFrameCount += 1;            // Update the FrameCounter each Loop Cycle
 }
 /** Enemy Movement Update
@@ -313,7 +309,7 @@ function enemySpawn() {
         if (enemyData.length > 0) {
             lastEnemyX = enemyData[enemyData.length - 1].x;
         }
-        let newEnemyX = lastEnemyX + ENEMY_MIN_DIST + Math.random() * (ENEMY_MAX_DIST - ENEMY_MIN_DIST);
+        let newEnemyX = lastEnemyX + ENEMY_MIN_DIST + Math.random() * (enemySpawnMaxDist - ENEMY_MIN_DIST);
         let newEnemyY = GROUND_Y - ENEMY_HEIGHT;
         let newEnemyType;
         if (Math.random() > 0.5) {
@@ -339,10 +335,8 @@ function updateEnemyCollision() {
     let collisionDetected = false;
     for (let i = 0; i < enemyData.length; i++) {
         // Collision
-        if (collidingPlayerEnemy(playerX + playerCollisionBox.xOffset, playerY + playerCollisionBox.yOffset,
-            playerCollisionBox.width, playerCollisionBox.height,
-            enemyData[i].x + enemyCollisionBox.xOffset, enemyData[i].y + enemyCollisionBox.yOffset,
-            enemyCollisionBox.width, enemyCollisionBox.height)) {
+        if (collidingPlayerEnemy(playerX + playerCollisionBox.xOffset, playerY + playerCollisionBox.yOffset, playerCollisionBox.width, playerCollisionBox.height,
+            enemyData[i].x + enemyCollisionBox.xOffset, enemyData[i].y + enemyCollisionBox.yOffset, enemyCollisionBox.width, enemyCollisionBox.height)) {
             collisionDetected = true;
         }
     }
@@ -491,6 +485,21 @@ function updateCamera() {
     cameraX = playerX - CAMERA_X_OFFSET;
     cameraY = 0;
 }
+
+function updateDifficulty () {
+    let playerDistance = playerX / 1000;
+    if (playerDistance.toFixed(0) > 10) {
+        enemySpawnMaxDist = 600;  // 1200
+        enemySpawnActive = 5;  // 3
+    } else if (playerDistance.toFixed(0) > 20) {
+        enemySpawnMaxDist = 300;  // 1200
+        enemySpawnActive = 10;  // 3
+    } else if (playerDistance.toFixed(0) > 30) {
+        enemySpawnMaxDist = 150;  // 1200
+        enemySpawnActive = 20;  // 3 
+    }
+    console.log(enemySpawnActive);
+}
 /* CANVAS DRAW
 * this section looks at the calculations from the previous section. Then he draws everything back in the browser as it should be.
 */
@@ -544,12 +553,7 @@ function drawEnemies(camShakeX, camShakeY) {
         } else {
             newEnemySpriteSheet.image.src = enemyWalkingSprite;
         }
-        drawAnimatedSprite(
-            enemyData[i].x - camShakeX,
-            enemyData[i].y - camShakeY,
-            enemyData[i].frameNum,
-            newEnemySpriteSheet
-        );
+        drawAnimatedSprite(enemyData[i].x - camShakeX, enemyData[i].y - camShakeY, enemyData[i].frameNum, newEnemySpriteSheet);
         if (debugMode) {
             gameContext.strokeStyle = 'red';
             gameContext.strokeRect(enemyData[i].x + enemyCollisionBox.xOffset - camShakeX, enemyData[i].y + enemyCollisionBox.yOffset - camShakeY, enemyCollisionBox.width, enemyCollisionBox.height);
@@ -563,14 +567,9 @@ function drawEnemies(camShakeX, camShakeY) {
  */
 function drawPlayer(camShakeX, camShakeY) {
     // Player
-    drawAnimatedSprite(
-        playerX - camShakeX,
-        playerY - camShakeY,
-        playerFrameNum,
-        playerSpriteSheet
+    drawAnimatedSprite(playerX - camShakeX, playerY - camShakeY, playerFrameNum, playerSpriteSheet
     );
     if (debugMode) {
-        /// DEBUGGING HITBOXES
         gameContext.strokeStyle = 'red';
         gameContext.strokeRect(playerX + playerCollisionBox.xOffset - camShakeX, playerY + playerCollisionBox.yOffset - camShakeY, playerCollisionBox.width, playerCollisionBox.height,);
     }
@@ -618,13 +617,6 @@ function drawGUI() {
  * @param {*} spriteSheet - Animated SpriteSheet
  */
 function drawAnimatedSprite(screenX, screenY, frameNum, spriteSheet) {
-    let spriteSheetRow = Math.floor(frameNum / spriteSheet.framesPerRow),
-        spriteSheetColomn = frameNum % spriteSheet.framesPerRow,
-        spriteSheetX = spriteSheetColomn * spriteSheet.spriteWidth,
-        spriteSheetY = spriteSheetRow * spriteSheet.spriteHeight;
-
-    gameContext.drawImage(spriteSheet.image, spriteSheetX, spriteSheetY,
-        spriteSheet.spriteWidth, spriteSheet.spriteHeight,
-        screenX, screenY,
-        spriteSheet.spriteWidth, spriteSheet.spriteHeight);
+    let spriteSheetRow = Math.floor(frameNum / spriteSheet.framesPerRow), spriteSheetColomn = frameNum % spriteSheet.framesPerRow, spriteSheetX = spriteSheetColomn * spriteSheet.spriteWidth, spriteSheetY = spriteSheetRow * spriteSheet.spriteHeight;
+    gameContext.drawImage(spriteSheet.image, spriteSheetX, spriteSheetY, spriteSheet.spriteWidth, spriteSheet.spriteHeight, screenX, screenY, spriteSheet.spriteWidth, spriteSheet.spriteHeight);
 }
