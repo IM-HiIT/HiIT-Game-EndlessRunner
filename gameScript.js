@@ -37,13 +37,18 @@ const GAME_CONTAINER = document.getElementById('main'), // Element to draw Canva
     // Enemy Globals
     ENEMY_WIDTH = 64,           // Width of Enemy Sprite
     ENEMY_HEIGHT = 45,          // Height of Enemy Sprite
-    ENEMY_ANIM_FRAMES = 4,      // Number of Animation Frames in SpriteSheet
+    ENEMY_ANIM_FRAMES = 3,      // Number of Animation Frames in SpriteSheet
     ENEMY_ANIM_SPEED = 6,       // Speed of Animation Cycle
     ENEMY_RUN_SPEED = 4,        // Run Speed of Enemy
     ENEMY_MIN_DIST = 400,       // Minimal Distance between Enemy Spawn Locations
     ENEMY_MAX_DIST = 1200,      // Maximal Distance between Enemy Spawn Locations
-    ENEMY_MIN_ACTIVE = 3;       // Maximal Number of Enemies to Spawn Active
-
+    ENEMY_MIN_ACTIVE = 3,       // Maximal Number of Enemies to Spawn Active
+    //
+    COLLECTABLE_WIDTH = 64,           // Width of  Sprite
+    COLLECTABLE_HEIGHT = 65,
+    COLLECTABLE_MIN_DIST = 400,       // Minimal Distance between  Spawn Locations
+    COLLECTABLE_MAX_DIST = 1200,      // Maximal Distance between  Spawn Locations
+    COLLECTABLE_MAX_ACTIVE = 1;       // Maximal Number of  to Spawn Active
 /* SETTINGS
 * In this section we put everything we need before our game can be started, such as the canvas width and image loading settings. We also put all the variable declarations used in the rest of the program here. Finally, we also place the main loop of our program here.
 */
@@ -99,31 +104,51 @@ let playerX = (CANVAS_WIDTH / 2),           // Position of Player on X Axis (Cen
         height: PLAYER_COLL_HEIGHT_MIN//65 //200                    // Height of Collision Box
     };
 // Enemy
-let enemyImage = new Image(),                           // New Enemy Sprite
-    enemyWalkingSprite = "imgs/spritesheet_Enemy_Walking.png",  // Set Sourcefile
-    enemyFlyingSprite = "imgs/spritesheet_Enemy_Flying.png";  // Set Sourcefile
-enemyImage.src = enemyWalkingSprite;  // Set SpriteSheet Source
-//
+let enemyWalkImage = new Image();                           // New Enemy Sprite
+enemyWalkImage.src = "imgs/spritesheet_Enemy_Walking.png";  // Set SpriteSheet Source
+let enemyWalkSpriteSheet = {                    // Enemy SpriteSheet Data
+    framesPerRow: 4,                    // Number of Animation Frames per SpriteSheet Row
+    spriteWidth: ENEMY_WIDTH,           // Set Sprite Width 
+    spriteHeight: ENEMY_HEIGHT,         // Set Sprite Height
+    image: enemyWalkImage                   // Set Sprite Image
+};
+
+let enemyFlyImage = new Image();
+enemyFlyImage.src = "imgs/spritesheet_Enemy_Flying.png";
+let enemyFlySpriteSheet = {                    // Enemy SpriteSheet Data
+    framesPerRow: 4,                    // Number of Animation Frames per SpriteSheet Row
+    spriteWidth: ENEMY_WIDTH,           // Set Sprite Width 
+    spriteHeight: ENEMY_HEIGHT,         // Set Sprite Height
+    image: enemyFlyImage                   // Set Sprite Image
+};
+let enemyData = [{                          // Singular Enemy Data
+    x: 2000,                            // Spawn Position X at start
+    y: (GROUND_Y - ENEMY_HEIGHT),       // Set enemy on Ground
+    frameNum: 0,                        // Current Number of Animation Frame 
+    isFlyingType: false
+}];
+let enemyCollisionBox = {                   // Enemy Collision Box Data
+    xOffset: 16,                        // X Axis Offset of Collision Box
+    yOffset: 2,                         // Y Axis Offset of Collision Box
+    width: 30,                          // Width of Collision Box
+    height: 44                          // Height of Collision Box
+}
 let flyHeight = 60,
     enemySpawnActive = ENEMY_MIN_ACTIVE,
-    enemySpawnMaxDist = ENEMY_MAX_DIST,
-    enemySpriteSheet = {                    // Enemy SpriteSheet Data
-        framesPerRow: 4,                        // Number of Animation Frames per SpriteSheet Row
-        spriteWidth: ENEMY_WIDTH,               // Set Sprite Width 
-        spriteHeight: ENEMY_HEIGHT,             // Set Sprite Height
-        image: enemyImage                       // Set Sprite Image
-    },
-    enemyData = [{                          // Singular Enemy Data
-        x: 2000,                            // Spawn Position X at start
-        y: (GROUND_Y - ENEMY_HEIGHT),       // Set enemy on Ground
-        frameNum: 0,                         // Current Number of Animation Frame 
-        isFlyingType: false
-    }],
-    enemyCollisionBox = {                   // Enemy Collision Box Data
-        xOffset: 16,//55,                   // X Axis Offset of Collision Box
-        yOffset: 2, //20,                  // Y Axis Offset of Collision Box
-        width: 30,//50,                     // Width of Collision Box
-        height: 44//100                     // Height of Collision Box
+    enemySpawnMaxDist = ENEMY_MAX_DIST;
+// COLLECTABLE
+let collectableImage = new Image();
+collectableImage.src = "imgs/collectable.png";
+let collectableData = [{                // Singular  Data
+    x: 0,                            // Spawn Position X at start
+    y: (GROUND_Y - COLLECTABLE_HEIGHT),       // Set  on Ground
+    isCollected: false
+}],
+    collectableCollisionBox = {                   //  Collision Box Data
+        xOffset: 5,                        // X Axis Offset of Collision Box
+        yOffset: -405,                         // Y Axis Offset of Collision Box
+        width: 55,                          // Width of Collision Box
+        height: 55                          // Height of Collision Box
     }
 
 // Event Listeners
@@ -245,15 +270,69 @@ function GameUpdate() {
         return;                     // Return out of the Loop
     }
     updateLevelDecor();             // World Decor Update
-    updateEnemy();              // Update Enemies
+    updateCollectables();
+    updateEnemy();                  // Update Enemies
     updateEnemyCollision();         // Enemy Collision Update
     updateCollision();              // Collision Update
-    updatePlayerDeath();           // Player Death Update
+    updatePlayerDeath();            // Player Death Update
     updatePlayerMove();             // Player Movement Update
     updatePlayerAnim();             // Player Animation Update
     updateCamera();                 // Update Camera
     updateDifficulty();
     gameFrameCount += 1;            // Update the FrameCounter each Loop Cycle
+}
+/** Level Decor Update
+ * 
+ */
+function updateLevelDecor() {
+    for (let i = 0; i < levelDecorData.length; i++) {
+        if ((levelDecorData[i].x - cameraX) < -CANVAS_WIDTH) {
+            levelDecorData[i].x += (2 * CANVAS_WIDTH) + 150;
+        }
+    }
+}
+/** Level Decor Update
+ * 
+ */
+function updateCollectables() {
+    for (let i = 0; i < collectableData.length; i++) {
+        if ((collectableData[i].x - cameraX) < -CANVAS_WIDTH) {
+            collectableData[i].x += (2 * CANVAS_WIDTH) + 150;
+        }
+    }
+    collectableSpawn();
+}
+function collectableSpawn() {
+    if (collectableData.length < COLLECTABLE_MAX_ACTIVE) {
+        let lastCollectableX = CANVAS_WIDTH;
+        if (collectableData.length > 0) {
+            lastCollectableX = collectableData[collectableData.length - 1].x;
+        }
+        let newCollectableX = lastCollectableX + COLLECTABLE_MIN_DIST + Math.random() * (COLLECTABLE_MAX_DIST - COLLECTABLE_MIN_DIST);
+        let newCollectableY = GROUND_Y - COLLECTABLE_HEIGHT;
+        collectableData.push({
+            x: newCollectableX,
+            y: newCollectableY,
+            isCollected: false
+        });
+    }
+}
+
+function updateCollectableCollision() {
+    let collisionDetected = false;
+    for (let i = 0; i < collectableData.length; i++) {
+        // Collision
+        if (collidingPlayerCollectable(playerX + playerCollisionBox.xOffset, playerY + playerCollisionBox.yOffset, playerCollisionBox.width, playerCollisionBox.height,
+            collectableData[i].x + collectableCollisionBox.xOffset, collectableData[i].y + collectableCollisionBox.yOffset, collectableCollisionBox.width, collectableCollisionBox.height)) {
+            collisionDetected = true;
+        }
+    }
+    return collisionDetected;
+}
+function collidingPlayerCollectable(playerX, playerY, playerWidth, playerHeight, collectableX, collectableY, collectableWidth, collectableHeight) {
+    let collideXAxis = collisionDetection(playerX, playerX + playerWidth, collectableX, collectableX + collectableWidth),
+        collideYAxis = collisionDetection(playerY, playerY + playerHeight, collectableY, collectableY + collectableHeight);
+    return collideXAxis && collideYAxis;
 }
 /** Enemy Movement Update
  * 
@@ -264,26 +343,15 @@ function updateEnemy() {
         if (enemyData[i].isFlyingType) {
             //!! Y COORD UPDATE !!
         }
+        if (enemyData[i].frameNum > ENEMY_ANIM_FRAMES || enemyData[i].frameNum < 0) {
+            console.log("Wrong FrameNum " + enemyData[i].frameNum);
+            enemyData[i].frameNum = 0;
+        }
         enemyData[i].frameNum = updateEnemyAnim(enemyData[i].frameNum);     // Animation
     }                                                                       // 
     enemyDespawnOoB();                                                      // Despawn Out-of-Bound
     enemySpawn();                                                           // Spawn Enemy
 
-}
-/**
- * 
- * @param {*} _enemyFrameNum 
- * @returns 
- */
-function updateEnemyAnim(_enemyFrameNum) {
-    // Animation
-    if ((gameFrameCount % ENEMY_ANIM_SPEED) === 0) {
-        _enemyFrameNum += 1;
-        if (_enemyFrameNum >= ENEMY_ANIM_FRAMES) {
-            _enemyFrameNum = 0;
-        }
-    }
-    return _enemyFrameNum;
 }
 /**
  * 
@@ -327,9 +395,24 @@ function enemySpawn() {
         });
     }
 }
+/**
+ * 
+ * @param {*} _enemyFrameNum 
+ * @returns _enemyFrameNum 
+ */
+function updateEnemyAnim(_enemyFrameNum) {
+    // Animation
+    if ((gameFrameCount % ENEMY_ANIM_SPEED) === 0) {
+        _enemyFrameNum += 1;
+        if (_enemyFrameNum >= ENEMY_ANIM_FRAMES) {
+            _enemyFrameNum = 0;
+        }
+    }
+    return _enemyFrameNum;
+}
 /** Update Enemy Collision
  * 
- * @returns 
+ * @returns collisionDetected
  */
 function updateEnemyCollision() {
     let collisionDetected = false;
@@ -383,20 +466,20 @@ function updateCollision() {
         shakeCamera = true;
         if (playerHealth > 0) {
             isHit = true
-            playerHealth -= 1;
+            if (!debugMode) {
+                playerHealth -= 1;
+            }
         }
     } else {
         isHit = false;
     }
-
-}
-/** Level Decor Update
- * 
- */
-function updateLevelDecor() {
-    for (let i = 0; i < levelDecorData.length; i++) {
-        if ((levelDecorData[i].x - cameraX) < -CANVAS_WIDTH) {
-            levelDecorData[i].x += (2 * CANVAS_WIDTH) + 150;
+    let collectionOccured = updateCollectableCollision();
+    if (collectionOccured) {
+        if (playerHealth < PLAYER_MAX_HEALTH) {
+            playerHealth += 10;
+            console.log("collected");
+        } else if (playerHealth >= PLAYER_MAX_HEALTH) {
+            playerHealth = PLAYER_MAX_HEALTH;
         }
     }
 }
@@ -413,11 +496,11 @@ function updatePlayerMove() {
     if (isSliding) {                                            // Player Slide
         playerCollisionBox.height = PLAYER_COLL_HEIGHT_MAX;     //
         playerCollisionBox.yOffset = PLAYER_COLL_YOFFSET_MAX;   //
-        if (playerXDirection >= 0) {                            // Slide Traction
+        if (playerXDirection >= 0.00) {                            // Slide Traction
             playerXDirection -= 0.01;                           //
         }                                                       //
-        if (playerXDirection <= 0) {                            //
-            playerXDirection = 0;                               //
+        if (playerXDirection <= 0.00) {                            //
+            playerXDirection = 0.00;                               //
         }                                                       //
     }                                                           //
     if (isSlidePress && !isSliding) {                           // IF Pressed, but NOT yet Sliding
@@ -431,10 +514,10 @@ function updatePlayerMove() {
         playerCollisionBox.yOffset = PLAYER_COLL_YOFFSET_MIN;   //
     }                                                           //
     if (!isSliding && !isSlidePress) {                          // If NOT Pressed and NOT Sliding
-        if (playerXDirection >= 1) {                            //
-            playerXDirection = 1;                               //
+        if (playerXDirection >= 1.00) {                            //
+            playerXDirection = 1.00;                               //
         }                                                       //
-        if (playerXDirection < 1) {                             //
+        if (playerXDirection < 1.00) {                             //
             playerXDirection += 0.03;                           //
         }                                                       //
     }                                                           //
@@ -486,19 +569,21 @@ function updateCamera() {
     cameraY = 0;
 }
 
-function updateDifficulty () {
+function updateDifficulty() {
     let playerDistance = playerX / 1000;
-    if (playerDistance.toFixed(0) > 10) {
+    if (playerDistance.toFixed(0) > 10 && playerDistance.toFixed(0) < 20) {
         enemySpawnMaxDist = 600;  // 1200
         enemySpawnActive = 5;  // 3
-    } else if (playerDistance.toFixed(0) > 20) {
+    } else if (playerDistance.toFixed(0) > 20 && playerDistance.toFixed(0) < 50) {
         enemySpawnMaxDist = 300;  // 1200
-        enemySpawnActive = 10;  // 3
-    } else if (playerDistance.toFixed(0) > 30) {
+        enemySpawnActive = 8;  // 3
+    } else if (playerDistance.toFixed(0) > 50 && playerDistance.toFixed(0) < 100) {
+        enemySpawnMaxDist = 250;  // 1200
+        enemySpawnActive = 16;  // 3 
+    } else if (playerDistance.toFixed(0) > 100) {
         enemySpawnMaxDist = 150;  // 1200
-        enemySpawnActive = 20;  // 3 
+        enemySpawnActive = 25;  // 3 
     }
-    console.log(enemySpawnActive);
 }
 /* CANVAS DRAW
 * this section looks at the calculations from the previous section. Then he draws everything back in the browser as it should be.
@@ -511,6 +596,7 @@ function CanvasDraw() {
         camShakeY += (Math.random() - 0.5) * CAMERA_SHAKERADIUS;
     }
     drawGameWorld(camShakeX, camShakeY);
+    drawCollectables(camShakeX, camShakeY);
     drawEnemies(camShakeX, camShakeY);
     drawPlayer(camShakeX, camShakeY);
     drawGUI();  // Draw GUI
@@ -540,6 +626,16 @@ function drawGameWorld(camShakeX, camShakeY) {
     }
 
 }
+function drawCollectables(camShakeX, camShakeY) {
+    for (let i = 0; i < collectableData.length; i++) {
+        gameContext.drawImage(collectableImage, (collectableData[i].x - camShakeX), (GROUND_Y - collectableData[i].y - camShakeY));
+        if (debugMode) {
+            gameContext.strokeStyle = 'green';
+            gameContext.strokeRect(collectableData[i].x + collectableCollisionBox.xOffset - camShakeX, collectableData[i].y + collectableCollisionBox.yOffset - camShakeY, collectableCollisionBox.width, collectableCollisionBox.height);
+        }
+    }
+}
+
 /** Draw Enemies
  * 
  * @param {*} camShakeX 
@@ -547,13 +643,11 @@ function drawGameWorld(camShakeX, camShakeY) {
  */
 function drawEnemies(camShakeX, camShakeY) {
     for (let i = 0; i < enemyData.length; i++) {
-        let newEnemySpriteSheet = enemySpriteSheet;
         if (enemyData[i].isFlyingType) {
-            newEnemySpriteSheet.image.src = enemyFlyingSprite;
+            drawAnimatedSprite(enemyData[i].x - camShakeX, enemyData[i].y - camShakeY, enemyData[i].frameNum, enemyFlySpriteSheet);
         } else {
-            newEnemySpriteSheet.image.src = enemyWalkingSprite;
+            drawAnimatedSprite(enemyData[i].x - camShakeX, enemyData[i].y - camShakeY, enemyData[i].frameNum, enemyWalkSpriteSheet);
         }
-        drawAnimatedSprite(enemyData[i].x - camShakeX, enemyData[i].y - camShakeY, enemyData[i].frameNum, newEnemySpriteSheet);
         if (debugMode) {
             gameContext.strokeStyle = 'red';
             gameContext.strokeRect(enemyData[i].x + enemyCollisionBox.xOffset - camShakeX, enemyData[i].y + enemyCollisionBox.yOffset - camShakeY, enemyCollisionBox.width, enemyCollisionBox.height);
@@ -567,8 +661,7 @@ function drawEnemies(camShakeX, camShakeY) {
  */
 function drawPlayer(camShakeX, camShakeY) {
     // Player
-    drawAnimatedSprite(playerX - camShakeX, playerY - camShakeY, playerFrameNum, playerSpriteSheet
-    );
+    drawAnimatedSprite(playerX - camShakeX, playerY - camShakeY, playerFrameNum, playerSpriteSheet);
     if (debugMode) {
         gameContext.strokeStyle = 'red';
         gameContext.strokeRect(playerX + playerCollisionBox.xOffset - camShakeX, playerY + playerCollisionBox.yOffset - camShakeY, playerCollisionBox.width, playerCollisionBox.height,);
@@ -617,6 +710,18 @@ function drawGUI() {
  * @param {*} spriteSheet - Animated SpriteSheet
  */
 function drawAnimatedSprite(screenX, screenY, frameNum, spriteSheet) {
-    let spriteSheetRow = Math.floor(frameNum / spriteSheet.framesPerRow), spriteSheetColomn = frameNum % spriteSheet.framesPerRow, spriteSheetX = spriteSheetColomn * spriteSheet.spriteWidth, spriteSheetY = spriteSheetRow * spriteSheet.spriteHeight;
-    gameContext.drawImage(spriteSheet.image, spriteSheetX, spriteSheetY, spriteSheet.spriteWidth, spriteSheet.spriteHeight, screenX, screenY, spriteSheet.spriteWidth, spriteSheet.spriteHeight);
+    let spriteSheetRow = Math.floor(frameNum / spriteSheet.framesPerRow),
+        spriteSheetColomn = (frameNum % spriteSheet.framesPerRow),
+        spriteSheetX = (spriteSheetColomn * spriteSheet.spriteWidth),
+        spriteSheetY = (spriteSheetRow * spriteSheet.spriteHeight);
+    gameContext.drawImage(
+        spriteSheet.image,
+        spriteSheetX,
+        spriteSheetY,
+        spriteSheet.spriteWidth,
+        spriteSheet.spriteHeight,
+        screenX,
+        screenY,
+        spriteSheet.spriteWidth,
+        spriteSheet.spriteHeight);
 }
