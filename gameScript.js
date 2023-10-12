@@ -24,7 +24,7 @@ const GAME_CONTAINER = document.getElementById('main'), // Element to draw Canva
     PAUSE_KEY = 81,             // Pause/Unpause with "Q"-key
     // Player Globals
     PLAYER_WIDTH = 96,          // Player Sprite Width
-    PLAYER_HEIGHT = 96,         // Player Spirte Height
+    PLAYER_HEIGHT = 96,         // Player Sprite Height
     PLAYER_ANIM_FRAMES = 8,     // Number of Animation Frames in SpriteSheet
     PLAYER_ANIM_SPEED = 6,      // Speed of Animation Cycle
     PLAYER_RUN_SPEED = 5,       // Run Speed of Player
