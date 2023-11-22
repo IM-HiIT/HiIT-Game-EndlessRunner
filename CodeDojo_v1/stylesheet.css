@@ -1,0 +1,15 @@
+*, html {
+    margin: auto 10px;
+}
+body {
+    background: gray;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+canvas {
+    background: white;;
+}
+
+.hidden {
+    display: none;
+}
